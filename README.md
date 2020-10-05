@@ -6,6 +6,9 @@ October, 2020
 
 ## Setup
 
+This script uses the `R` package `MODIStsp` to select, and download MODIS products then clip to an Area of Interest.
+Then the script creates some exploratory statistics over all pixels in each eLTER AOI, for each MODIS tile.
+
 Load necessary R libraries, user configurable directories, then read in
 the `functions.R` script with contains helper functions for summarizing
 layers by date and site, and plotting graphs.
