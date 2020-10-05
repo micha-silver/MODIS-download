@@ -1,0 +1,163 @@
+---
+title: "Download MODIS"
+author:
+  - name: Micha Silver
+  - name: Arnon Karnieli
+date: "10/10/2020"
+output:
+  github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+Load necessary R libraries, user configurable directories, then read in the `functions.R` script with contains helper functions for summarizing layers by date and site, and plotting graphs.
+```{r libraries}
+library(MODIStsp)
+library(stars)
+library(sf)
+# Edit below as necessary: GIS directory, list of AOI files, and options files
+GIS_dir = "/home/micha/work/eLTER/GIS"
+Output_dir = "/home/micha/work/eLTER/Output"
+site_files = list.files(GIS_dir, pattern = "*gpkg$", full.names = TRUE)
+config_files = c("modistsp_options_VI.json", "modistsp_options_LST.json")
+# Load some helper functions
+source("functions.R")
+```
+
+## MODIS products, layers
+Display lists of all available products and layers in each product category.
+```{r MODIS products}
+MODIStsp_get_prodnames()
+# [105] "Vegetation Indexes_16Days_250m (M*D13Q1)"
+# [23] "LST_3band_emissivity_8day_1km (M*D21A2)"
+```
+
+
+```{r MODIS layers}
+MODIStsp_get_prodlayers("Vegetation Indexes_16Days_250m (M*D13Q1)")
+MODIStsp_get_prodlayers("LST_3band_emissivity_8day_1km (M*D21A2)")
+```
+
+## Use the GUI
+Here the user can choose:
+ 
+ * product, layers
+ * start and end dates
+ * a polygon area of interest (shapefile or Geopackage)
+ * and satellite platforms
+ 
+```{r GUI}
+MODIStsp()
+```
+
+## Loop over all sites
+Call the MODIStsp() function with `gui = FALSE` and point to a json formated options file to run the download. The options file was saved from the GUI step above. This loop downloads all available MODIS tiles for each AOI.
+
+(Commented out below, as this will take a *long* time)
+
+```{r loop_sites, }
+# for (opts in config_files) {
+#   lapply(1:length(site_files), FUN = function(s) {
+#     site_file = site_files[s]
+#     
+#     MODIStsp(gui = FALSE,
+#            opts_file = opts,
+#            spafile = site_file,
+#            #start_date = "2018.10.01", # To change the dates
+#            #sensor = "Aqua",  # "Terra" or "Both"
+#            downloader = "aria2", # "html" or "aria2" if it is installed
+#            )
+#   })
+# }
+```
+
+
+## Summary of pixels in each site
+Loop over all sites and summarize pixels by date for each site.
+The functions used here are stored in `functions.R`
+
+#### Vegetation indices
+```{r vi_pixel_averages}
+# site_names = lapply(site_files, FUN = function(f) {
+#                       tools::file_path_sans_ext(basename(f))})
+# 
+# lapply(1:length(site_names), FUN = function(s) {
+#   # Get site polygon as sf object
+#   site_name = site_names[[s]]
+#   site = read_sf(site_files[s])
+#   
+#   # Extract NDVI and EVI time series, and plot
+#   VI_folder = file.path(Output_dir, site_name,
+#                         "VI_16Days_250m_v6")
+#   # NDVI
+#   mod_stars = StarsFromFolder(VI_folder, site, "NDVI")
+#   NDVI_df = ValuesFromStars(mod_stars, "NDVI")
+#   date_df = DatesFromFolder(file.path(VI_folder, "NDVI"))
+#   #cnt_df = PixelCountFromStars(mod_stars)
+#   cnt_df = PixelCountFromFolder(
+#     file.path(VI_folder, "NDVI"), site)
+#   # EVI
+#   mod_stars = StarsFromFolder(VI_folder, site, "EVI")
+#   EVI_df = ValuesFromStars(mod_stars, "EVI")
+#   VI_df = cbind(date_df, NDVI_df, EVI_df, cnt_df)
+#   PlotSave(site_name, VI_df, "VI")
+# })
+```
+
+#### Land surface temperature
+```{r lst_pixel_averages}
+# site_names = lapply(site_files, FUN = function(f) {
+#                       tools::file_path_sans_ext(basename(f))})
+# 
+# lapply(1:length(site_names), FUN = function(s) {
+#   # Extract LST day and night time series, and plot
+#   LST_folder = file.path(Output_dir, site_name,
+#                          "LST_3band_emissivity_8day_1km")
+#   # Day
+#   mod_stars = StarsFromFolder(LST_folder, site, "LST_Day_1KM")
+#   LST_day = ValuesFromStars(mod_stars, "LST_Day_1KM")
+#   date_df = DatesFromFolder(file.path(LST_folder, "LST_Day_1KM"))
+#   # cnt_df = PixelCountFromStars(mod_stars)
+#   cnt_df = PixelCountFromFolder(
+#     file.path(LST_folder, "LST_Day_1KM"), site)
+#   # Night
+#   mod_stars = StarsFromFolder(LST_folder, site, "LST_Night_1KM")
+#   LST_night = ValuesFromStars(mod_stars, "LST_Night_1KM")
+# 
+#   LST_df = cbind(date_df, LST_day, LST_night, cnt_df)
+#   PlotSave(site_name, LST_df, "LST")
+# })
+# ```
+# 
+```
+
+#### Corine Landcover for four years of CLC rasters
+```{r landcover}
+# ## Crop Corine Landcover from four years for each site
+# ```{r corine_landcover}
+# corine_basedir = "/home/micha/GIS/Corine_CLC"
+# corine_datadirs = list.dirs(path = corine_basedir)
+# corine_datadirs = corine_datadirs[grepl(pattern = "DATA$", x = corine_datadirs)]
+# corine_list = sapply(corine_datadirs, 
+#                      FUN = function(d) {list.files(d,
+#                                                    pattern = ".*tif$",
+#                                                    full.names = TRUE)},
+#                      USE.NAMES = FALSE)
+# site_names = lapply(site_files, FUN = function(f) {
+#                       tools::file_path_sans_ext(basename(f))})
+# 
+# for (s in 1:length(site_names)) {
+#   site_name = site_names[[s]]
+#   site = read_sf(site_files[s])
+#   # Transform site boundary to LAEA ETRS89 to match Corine data
+#   site = st_transform(site, crs=3035)
+#   for (clc_path in corine_list) {
+#       clc = read_stars(clc_path)
+#       CropSaveCorine(clc, clc_path, site, site_name)
+#   }
+# }
+````
+
