@@ -20,7 +20,12 @@ library(stars)
 library(sf)
 # Edit below as necessary: GIS directory, list of AOI files, and options files
 GIS_dir = "/home/micha/work/eLTER/GIS"
+
+# Where to save outputs
 Output_dir = "/home/micha/work/eLTER/Output"
+if ( !dir.exists(Output_dir)) {dir.create(Output_dir)}
+
+# List of eLTER sites (Geopackage format)
 site_files = list.files(GIS_dir, pattern = "*gpkg$", full.names = TRUE)
 config_files = c("modistsp_options_VI.json", "modistsp_options_LST.json")
 # Load some helper functions

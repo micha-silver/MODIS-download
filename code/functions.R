@@ -2,8 +2,6 @@
 library(lubridate)
 library(raster)
 library(ggplot2)
-library(RColorBrewer)
-library(stars)
 library(tidyr)
 
 DateFromFilename = function(f) {

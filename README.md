@@ -13,6 +13,14 @@ Load necessary R libraries, user configurable directories, then read in
 the `functions.R` script with contains helper functions for summarizing
 layers by date and site, and plotting graphs.
 
+Required `R` libraries (install using `install.packages()`):
+
+ - MODIStsp
+ - stars and sf
+ - lubridate
+ - raster
+ - ggplot2 and tidyr
+
 ``` r
 library(MODIStsp)
 library(stars)
