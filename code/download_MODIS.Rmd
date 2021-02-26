@@ -140,16 +140,19 @@ config_files = list.files(".", pattern = ".json$",
 spatial_files = list.files(GIS_dir, pattern = ".gpkg$",
                            full.names = TRUE)
 
-# Loop over configurations
-lapply(config_files, FUN = function(cfg) {
-  # Loop over sites
-   lapply(spatial_files, FUN = function(site) {
+# Loop over sites
+lapply(spatial_files, FUN = function(site) {
+   t0 = Sys.time()
+   site_name = basename(tools::file_path_sans_ext(site))
+   print(paste(t1, "-- Processing site:", site_name))
+   # Loop over configurations   
+   lapply(config_files, FUN = function(cfg) {
      MODIStsp(gui = FALSE,
             opts_file = cfg,
             spafile = site,
             spameth = "file",
-            user: user,
-            password: password,
+            user = user,
+            password = password,
             #start_date = "2018.10.01", # To change the dates
             #sensor = "Aqua",  # "Terra" or "Both"
             downloader = "aria2", # "html" or "aria2" if it is installed
@@ -157,15 +160,16 @@ lapply(config_files, FUN = function(cfg) {
             )
    })
  })
+
 ```
 
 \newpage
 
-# Summary of pixels in each site
+## Time series EO products averaged for each site
 Loop over all sites and summarize pixels by date for each site.
 The functions used here are stored in `functions.R`
 
-## Vegetation indices
+### Vegetation indices
 ```{r vi_pixel_averages}
 # site_names = lapply(site_files, FUN = function(f) {
 #                       tools::file_path_sans_ext(basename(f))})
@@ -193,7 +197,7 @@ The functions used here are stored in `functions.R`
 # })
 ```
 
-## Land surface temperature
+### Land surface temperature
 ```{r lst_pixel_averages}
 # site_names = lapply(site_files, FUN = function(f) {
 #                       tools::file_path_sans_ext(basename(f))})

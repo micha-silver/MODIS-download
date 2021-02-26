@@ -19,7 +19,7 @@
 #' ## Setup
 #' Load necessary R libraries, user configurable directories, then read in the `functions.R` script with contains helper functions for summarizing layers by date and site, and plotting graphs.
 ## ----libraries-------------------------------------------------------
-pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2",
+pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2", "tools",
              "tidyr", "sf", "stars", "exactextractr", "leaflet",
              "shiny","shinydashboard","shinyFiles", "shinyalert", 
              "rappdirs","shinyjs", "leafem", "mapedit", "magrittr")
@@ -77,20 +77,26 @@ config_files = list.files(".", pattern = ".json$",
 spatial_files = list.files(GIS_dir, pattern = ".gpkg$",
                            full.names = TRUE)
 
-# Loop over configurations
-lapply(config_files, FUN = function(cfg) {
-  # Loop over sites
-   lapply(spatial_files, FUN = function(site) {
+# Loop over sites
+lapply(spatial_files, FUN = function(site) {
+   t0 = Sys.time()
+   site_name = basename(tools::file_path_sans_ext(site))
+   print(paste(t0, "-- Processing site:", site_name))
+   # Loop over configurations   
+   lapply(config_files, FUN = function(cfg) {
      MODIStsp(gui = FALSE,
             opts_file = cfg,
             spafile = site,
             spameth = "file",
-            user: user,
-            password: password,
+            user = user,
+            password = password,
             #start_date = "2018.10.01", # To change the dates
             #sensor = "Aqua",  # "Terra" or "Both"
             downloader = "aria2", # "html" or "aria2" if it is installed
             verbose = FALSE
             )
    })
+   t1 = Sys.time()
+   elapsed = round(difftime(t1, t0, units = "mins"))
+   print(paste(t0, "-- Completed site:", site, "in", elasped, "mins"))
  })
