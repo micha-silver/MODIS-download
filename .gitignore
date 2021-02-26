@@ -2,6 +2,9 @@ Output/
 Site_boundaries/
 code/israel_options.json
 code/download_MODIS_bak.Rmd
-
-
+code/code.Rproj
+code/.Rhistory
+GIS/
+WP4/
+Presentations/
 .Rproj.user

@@ -1,8 +1,27 @@
 # Helper functions
-library(lubridate)
-library(raster)
-library(ggplot2)
-library(tidyr)
+
+ObtainSitePolygons = function(site_list_file) {
+  # Download shapefile from DEIMS website
+  # Useing list of sites/URLs in text file
+  # Collect into one sf object
+  # Save to gpkg
+  site_list = read.csv(site_list_file)
+  sites_sf_list = lapply(1:length(site_list$url), function(s) {
+    site_name = site_list$site_name[s]
+    site_url = site_list$url[s]
+    dest_zip = file.path(GIS_dir, paste0(site_name, ".zip"))
+    download.file(site_url,destfile = dest_zip)
+    unzip(dest_zip, exdir = GIS_dir)
+    site_shp = file.path(GIS_dir, "deims_sites_boundariesPolygon.shp")
+    site_sf = read_sf(site_shp)
+    file.remove(list.files(GIS_dir,
+                           pattern = "deims_",
+                           full.names = TRUE))
+    site_gpkg = file.path(GIS_dir, paste0(site_name,".gpkg"))
+    write_sf(site_sf, site_gpkg)
+  })
+}
+
 
 DateFromFilename = function(f) {
   # Split file name at '_', and use last two elements to construct date

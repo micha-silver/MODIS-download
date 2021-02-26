@@ -1,11 +1,17 @@
 ---
-title: "Download MODIS"
+title: "Acquiring EO datasets for eLTER+ sites"
 author:
   - name: Micha Silver
   - name: Arnon Karnieli
-date: "10/10/2020"
+date: "20/02/2021"
 output:
-  github_document
+  github_document:
+    toc: true
+    toc_depth: 2
+  pdf_document:
+    toc: TRUE
+    toc_depth: 2
+bibliography: bibliography.bib  
 ---
 
 ```{r setup, include=FALSE}
@@ -15,25 +21,52 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Setup
 Load necessary R libraries, user configurable directories, then read in the `functions.R` script with contains helper functions for summarizing layers by date and site, and plotting graphs.
 ```{r libraries}
-library(MODIStsp)
-library(stars)
-library(sf)
-# Edit below as necessary: GIS directory, list of AOI files, and options files
-GIS_dir = "/home/micha/work/eLTER/GIS"
+pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2",
+             "tidyr", "sf", "stars", "exactextractr", "leaflet",
+             "shiny","shinydashboard","shinyFiles", "shinyalert", 
+             "rappdirs","shinyjs", "leafem", "mapedit", "magrittr")
+installed_packages <- pkg_list %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(pkg_list[!installed_packages])
+}
+# Packages loading
+lapply(pkg_list, library, character.only = TRUE)
+```
+### Define directories
+```{r directories}
+# Edit below as necessary: GIS directory, output directory and options files
+GIS_dir = "../GIS"
+if (!dir.exists(GIS_dir)) {dir.create(GIS_dir,
+                                      recursive = TRUE)}
 
 # Where to save outputs
-Output_dir = "/home/micha/work/eLTER/Output"
-if ( !dir.exists(Output_dir)) {dir.create(Output_dir)}
+Output_dir = "../Output"
+if (!dir.exists(Output_dir)) {dir.create(Output_dir,
+                                         recursive = TRUE)}
 
-# List of eLTER sites (Geopackage format)
-site_files = list.files(GIS_dir, pattern = "*gpkg$", full.names = TRUE)
-config_files = c("modistsp_options_VI.json", "modistsp_options_LST.json")
 # Load some helper functions
 source("functions.R")
 ```
 
+### Load polygons from DEIMS site
+```{r site_polygons, results='hide', message=FALSE}
+# Download shapefiles from list of eLTER sites
+# Save as geopackage
+# The list of sites and download URL is in:
+# "site_shapefiles_url.txt"
+# Call ObtainSitePolygons function (in functions.R)
+site_list_file = "site_shapefiles_url.txt"
+sites_sf = ObtainSitePolygons(site_list_file)
+```
+
+\newpage
+
 ## MODIS products, layers
+Use the MODIStsp package to filter and download layers
+@busetto_modistsp
+
 Display lists of all available products and layers in each product category.
+
 ```{r MODIS products}
 MODIStsp_get_prodnames()
 # [105] "Vegetation Indexes_16Days_250m (M*D13Q1)"
@@ -46,45 +79,93 @@ MODIStsp_get_prodlayers("Vegetation Indexes_16Days_250m (M*D13Q1)")
 MODIStsp_get_prodlayers("LST_3band_emissivity_8day_1km (M*D21A2)")
 ```
 
-## Use the GUI
+### Use the GUI
 Here the user can choose:
  
  * product, layers
  * start and end dates
  * a polygon area of interest (shapefile or Geopackage)
  * and satellite platforms
+ * Each set of options saved to *.json file
  
+Requires registration on EarthData website:
+https://urs.earthdata.nasa.gov/home
+ 
+Example:
+In **"Products and Layers"** panel
+  * from Product Category dropdown
+    - choose Ecosystem variables Vegetation Indices
+  * from Product Name dropdown
+    - choose Vegetation_Indices_16days_250m
+  * from layers to be processed dropdown
+    - choose 16 day NDVI average
+ 
+In **"Spatial Temporal"** panel
+  * in Temporal Range, select date range
+  * in Output Projection
+    - select User defined
+    - click "Change" and enter EPSG for desired projection
+    - i.e. 3035 for ETRS89 based European LAEA (conformal) projection
+  * in Spatial Extent choose "Load from Spatial file" and click browse to choose gpkg for site 
+  
+In **Output Format**
+  * Under Download Method, enter username and password
+  * Under Output Options, choose R rasterStack
+  * Under Output Folders, click browse to select output location
+ 
+Click **Save Options** 
+  * Save as json file
+  * Browse to save under R code directory
+  
 ```{r GUI}
 MODIStsp()
 ```
 
-## Loop over all sites
-Call the MODIStsp() function with `gui = FALSE` and point to a json formated options file to run the download. The options file was saved from the GUI step above. This loop downloads all available MODIS tiles for each AOI.
+### Loop over all sites
+Call the MODIStsp() function with `gui = FALSE` and point to each json formatted options file to run the download. The options file was saved from the GUI step above. This loop downloads all available MODIS tiles for each AOI.
 
-(Commented out below, as this will take a *long* time)
+The download utility used here is "aria2". It can be obtained from:
+https://github.com/aria2/aria2/releases/tag/release-1.35.0
 
-```{r loop_sites, }
-# for (opts in config_files) {
-#   lapply(1:length(site_files), FUN = function(s) {
-#     site_file = site_files[s]
-#     
-#     MODIStsp(gui = FALSE,
-#            opts_file = opts,
-#            spafile = site_file,
-#            #start_date = "2018.10.01", # To change the dates
-#            #sensor = "Aqua",  # "Terra" or "Both"
-#            downloader = "aria2", # "html" or "aria2" if it is installed
-#            )
-#   })
-# }
+You **must supply a username and password** for authentication
+
+```{r loop_sites, results='hide'}
+#---------------------------------
+# Enter username and password here for EarthData website
+user = 'your user name'
+password = 'your password'
+#---------------------------------
+config_files = list.files(".", pattern = ".json$",
+                          full.names = TRUE)
+spatial_files = list.files(GIS_dir, pattern = ".gpkg$",
+                           full.names = TRUE)
+
+# Loop over configurations
+lapply(config_files, FUN = function(cfg) {
+  # Loop over sites
+   lapply(spatial_files, FUN = function(site) {
+     MODIStsp(gui = FALSE,
+            opts_file = cfg,
+            spafile = site,
+            spameth = "file",
+            user: user,
+            password: password,
+            #start_date = "2018.10.01", # To change the dates
+            #sensor = "Aqua",  # "Terra" or "Both"
+            downloader = "aria2", # "html" or "aria2" if it is installed
+            verbose = FALSE
+            )
+   })
+ })
 ```
 
+\newpage
 
-## Summary of pixels in each site
+# Summary of pixels in each site
 Loop over all sites and summarize pixels by date for each site.
 The functions used here are stored in `functions.R`
 
-#### Vegetation indices
+## Vegetation indices
 ```{r vi_pixel_averages}
 # site_names = lapply(site_files, FUN = function(f) {
 #                       tools::file_path_sans_ext(basename(f))})
@@ -112,7 +193,7 @@ The functions used here are stored in `functions.R`
 # })
 ```
 
-#### Land surface temperature
+## Land surface temperature
 ```{r lst_pixel_averages}
 # site_names = lapply(site_files, FUN = function(f) {
 #                       tools::file_path_sans_ext(basename(f))})
