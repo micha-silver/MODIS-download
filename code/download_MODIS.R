@@ -19,20 +19,23 @@
 #' ## Setup
 #' Load necessary R libraries, user configurable directories, then read in the `functions.R` script with contains helper functions for summarizing layers by date and site, and plotting graphs.
 ## ----libraries-------------------------------------------------------
-pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2", "tools",
-             "tidyr", "sf", "stars", "exactextractr", "leaflet",
-             "shiny","shinydashboard","shinyFiles", "shinyalert", 
-             "rappdirs","shinyjs", "leafem", "mapedit", "magrittr")
+pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2",
+             "cowplot", "tidyr", "sf", "stars", "leaflet",
+             "shiny","shinydashboard","shinyFiles",
+             "shinyalert",  "rappdirs","shinyjs", "leafem",
+             "mapedit", "magrittr")
 installed_packages <- pkg_list %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
-  install.packages(pkg_list[!installed_packages])
+   install.packages(pkg_list[!installed_packages])
 }
 # Packages loading
-lapply(pkg_list, library, character.only = TRUE)
+pkgs = lapply(pkg_list, library, character.only = TRUE)
 
 #' ### Define directories
 ## ----directories-----------------------------------------------------
 # Edit below as necessary: GIS directory, output directory and options files
+# Edit below as necessary: GIS, output, and figures directories
+# and read options and sites files
 GIS_dir = "../GIS"
 if (!dir.exists(GIS_dir)) {dir.create(GIS_dir,
                                       recursive = TRUE)}
@@ -41,6 +44,15 @@ if (!dir.exists(GIS_dir)) {dir.create(GIS_dir,
 Output_dir = "../Output"
 if (!dir.exists(Output_dir)) {dir.create(Output_dir,
                                          recursive = TRUE)}
+
+# Where to save figures
+Figures_dir = "../Figures"
+if (!dir.exists(Figures_dir)) {dir.create(Figures_dir,
+                                          recursive = TRUE)}
+
+site_list_file = "site_shapefiles_url.txt"
+# (Add option to ignore Datum unknown warnings)
+options("rgdal_show_exportToProj4_warnings"="none")
 
 # Load some helper functions
 source("functions.R")
@@ -54,7 +66,7 @@ source("functions.R")
 # "site_shapefiles_url.txt"
 # Call ObtainSitePolygons function (in functions.R)
 site_list_file = "site_shapefiles_url.txt"
-sites_sf = ObtainSitePolygons(site_list_file)
+ObtainSitePolygons(site_list_file)
 
 
 #' 
