@@ -23,186 +23,103 @@ ObtainSitePolygons = function(site_list_file) {
 }
 
 
-DateFromFilename = function(f) {
-  # Split file name at '_', and use last two elements to construct date
-  parts = unlist(strsplit(basename(f),
-                          split =  "_", fixed = TRUE))
-  yr = parts[length(parts)-1]
-  doy = gsub(x = parts[length(parts)], pattern = ".tif", replacement = "")
-  dt = as_date(paste(yr, doy, sep="-"), format = "%Y-%j")
-  return(dt)
-}
 
-
-DatesFromFolder = function(folder) {
-  # Get list of dates from file names
-  file_list = list.files(path = folder,
-                         pattern = "*.tif$",
-                         full.names = TRUE)
-  dates = as_date(sapply(file_list, DateFromFilename, USE.NAMES = FALSE),
-                  origin = "1970-01-01")
-  # return as data.frame
-  return(data.frame("Date" = dates))
-}
-
-
-StarsFromFolder = function(folder, site, modis_type = "NDVI") {
-  # Scan all files in folder into a stars object,
-  file_list = list.files(path = file.path(folder, modis_type),
-                         pattern = "*.tif$",
-                         full.names = TRUE)
+TimeSeriesFromRasters = function(site) {
+  # Get list of RData files saved in above code
+  # Each is contains a rasterStack
+  # Load each and calculate cell statistics: mean and std dev.
+  # For each time slot
   
-  # Read all files into a stars object with 3 dimensions
-  # Using along=... to set the third dim to dates (YYYY_DOY format)
-  doy_names = unlist(lapply(file_list, FUN = function(f) {
-    dn1 = gsub(x = basename(f), pattern = ".tif", replacement = "")
-    parts = unlist(strsplit(x = dn1, split = "_", ))
-    return(paste("DOY",
-                 parts[length(parts)-1],
-                 parts[length(parts)], sep="_"))
-  }))
-  mod_stars = read_stars(file_list, along = list(DOY = doy_names))
-  # and clip to the site polygon
-  mod_stars = mod_stars[site]
-  return(mod_stars)  
-}
-
-
-ValuesFromStars = function(mod_stars, modis_type = "NDVI") {
-  # Use st_apply to get mean for each DOY
-  if (grepl(pattern = "LST", x = modis_type)) {
-    # LST in MODIS are Kelvin degrees * 50
-    # Revert to Celsius by dividing by 50 and subtracting 273
-    mod_stars[[1]] = mod_stars[[1]] * 0.02 - 273.15
-    vals = st_apply(mod_stars,
-                    MARGIN = "DOY",
-                    FUN = mean,
-                    na.rm = TRUE)$mean
-    vals_sd = st_apply(mod_stars,
-                       MARGIN = "DOY",
-                       FUN = sd,
-                       na.rm = TRUE)$sd  
-    if (grepl(pattern = "Day", modis_type)) {
-      vals_df = data.frame("LST_Day" = vals,
-                           "LST_Day_StdDev" = vals_sd)
-    } else {
-      vals_df = data.frame("LST_Night" = vals,
-                           "LST_Night_StdDev" = vals_sd)
+  # Read in site polygon to clip raster 
+  site_gpkg = file.path(GIS_dir, paste0(site, ".gpkg"))
+  site_sf = sf::read_sf(site_gpkg)
+  site_dir = file.path(Output_dir, site)
+  rdata_paths = list.files(site_dir, pattern=".RData$",
+                         recursive=TRUE, full.names=TRUE)
+  
+  timeseries_list = list()
+  for (rd in 1:length(rdata_paths)) {
+    load(rdata_paths[rd])
+    # The object in the RData file was saved as "raster_ts"
+    # First, keep list of raster dates
+    raster_ts_dates = raster_ts@z$time
+    
+    # Which MODIS data product is this:
+    # Split the name to get product
+    prod = unlist(strsplit(names(raster_ts)[1],
+                    split="_", fixed=TRUE))
+    # Drop the year and DOY components
+    prod = prod[1:(length(prod) - 2)]
+    prod = paste(prod, collapse = "_")
+    
+    # Now mask out raster by site polygon
+    # First transform site polygon to raster CRS
+    site_sf = st_transform(site_sf, crs = st_crs(raster_ts))
+    raster_ts = mask(raster_ts, site_sf)
+    
+    # Rescale raster values, based on how data are stored in MODIS
+    if (grepl(pattern = "LST", x = prod)) {
+      # LST in MODIS are Kelvin degrees * 50
+      # Revert to Celsius by dividing by 50 and subtracting 273
+      raster_ts = raster_ts * 0.02 - 273.15
+    } else if (grepl(pattern = "NDVI", x = prod)) {
+      # VI values in MODIS are scaled up by 10000
+      raster_ts = raster_ts * 0.0001
     }
-  } else {
-    # VI values in MODIS are scaled up by 10000
-    mod_stars[[1]] = mod_stars[[1]] * 0.0001
-    vals = st_apply(mod_stars,
-                    MARGIN = "DOY",
-                    FUN = mean,
-                    na.rm = TRUE)$mean
-    vals_sd = st_apply(mod_stars,
-                       MARGIN = "DOY",
-                       FUN = sd,
-                       na.rm = TRUE)$sd
-    if (grepl("NDVI", modis_type)) {
-      vals_df = data.frame("NDVI" = vals, "NDVI_StdDev" = vals_sd)  
-    } else {
-      vals_df = data.frame("EVI" = vals, "EVI_StdDev" = vals_sd)
-    }
+
+    vals_mean = cellStats(raster_ts, "mean")
+    vals_sd = cellStats(raster_ts, "sd")
+    vals_df = data.frame(vals_mean, vals_sd, raster_ts_dates)
+    names(vals_df) = c(paste0("Mean_", prod),
+                       paste0("StdDev_", prod),
+                       "Date")
+    timeseries_list[[rd]] = vals_df
+    names(timeseries_list)[rd] = prod
   }
-  return(vals_df)
+  return(timeseries_list)
 }
 
 
-PixelCountFromStars = function(mod_stars) {
-  names(mod_stars) = "Value"
-  # Use st_apply to extract count of non-NA pixels
-  # cnt_pixels = function(s, na.rm = TRUE, ...) {
-  #   # Count number of non NA values in $Value attrib
-  #   sdf = as.data.frame(s)
-  #   if (na.rm) {
-  #     sdf = sdf[complete.cases(sdf),]
-  #   }
-  #   return(length(sdf$Value)) 
-  # }
-  cnt_pixels <- function(s) { sum(!is.na(s)) }
-  cnt = st_apply(mod_stars,
-                 MARGIN = "DOY",
-                 FUN = cnt_pixels)$cnt_pixels
-  # Return as data.frame
-  return(data.frame("Num_Pixels" = cnt))
-}
-
-
-PixelCountFromFolder = function(folder, site) {
-  # How many pixels have values in this site
-  file_list = list.files(path = folder,
-                         pattern = ".*tif$",
-                         full.names = TRUE)
-  
-  #read each file into raster, and use extract to get non-NA pixels 
-  cnt = sapply(file_list,
-               FUN = function(f) {
-                 # Use only the Aqua files to avoid duplicate counts
-                 if (grepl("MOD", f)) {
-                   c=NA
-                 } else {
-                   r=raster(f)
-                   c = raster::extract(r, site,
-                                       fun=function(x, ...) length(na.omit(x)))
-                 }
-                 return(c)
-               },
-               USE.NAMES = FALSE)
-  return(data.frame("Num_Pixels" = cnt))
-}
-
-
-PlotSave = function(site_name, df, modis_type = "VI") {
-  # Get rid of NAs
-  df = df[complete.cases(df),]
-  
-  # Save to CSV
-  csv_file = paste(site_name, modis_type, "data.csv", sep="_")
-  Output_csv_path = file.path(Output_dir, site_name, csv_file)
-  write.csv(df, file = Output_csv_path)
-  
+PlotTimeSeries = function(timeseries_list, site) {
+  plt_list = lapply(1:length(timeseries_list),
+                FUN = function(t) {
+    # Work on one product, and get rid of NAs
+    df = timeseries_list[[t]]
+    df = df[complete.cases(df),]
+    # Pivot to long data.frame for easy plotting
+    df2 = pivot_longer(df, -Date,
+                       names_to = "Statistic",
+                       values_to = "Value")
+    prod = names(timeseries_list)[t]
+    Figures_site = file.path(Figures_dir, site)
+    if (!dir.exists(Figures_site)) {
+      dir.create(Figures_site, recursive = TRUE)}
+    
+    # Save timeseries to CSV
+    csv_file = paste(prod, "timeseries.csv", sep="_")
+    csv_path = file.path(Figures_site, csv_file)
+    write.csv(df, file = csv_path,row.names = FALSE)
+    
+    pl = ggplot(data = df2) +
+      geom_line(aes(x=Date, y=Value, color = Statistic),
+                size = 0.6, alpha=0.7 ) + 
+      geom_point(aes(x=Date, y=Value, color = Statistic),
+                 size = 0.6, alpha=0.5 ) + 
+      #scale_color_manual(values = clrs) +
+      ggtitle(paste(site, prod)) +
+       theme(axis.text = element_text(size=10),
+             axis.title = element_text(size=12),
+             title = element_text(size=12, face="bold"))
+    #print(pl)
+    return(pl)
+  })
+  pg = cowplot::plot_grid(plotlist = plt_list,
+                          align = "v", ncol=1)
   # Prepare to save Plot
-  png_file = paste(site_name, modis_type, "plot.png", sep="_")
-  Output_png_path = file.path(Output_dir, site_name, png_file)
-  # Pivot wide to long format for plotting 
-  df2 = df %>% 
-    # Get only the original values (Not StdDev, or num_pixels)
-    dplyr::select(., c(1,2,4)) %>%
-    pivot_longer(., cols = c(-Date), 
-                 names_to = "Type", values_to = "Value")
-  if (modis_type == "VI") {
-    clrs = c("darkgreen","blue")
-  } else {
-    clrs = c("darkred", "purple")
-  }
-  pl = ggplot(data = df2) +
-    geom_line(aes(x=Date, y=Value, color = Type),
-              size = 0.3, alpha=0.5 ) + 
-    geom_point(aes(x=Date, y=Value, color = Type),
-               size = 0.3, alpha=0.5 ) + 
-    scale_color_manual(values = clrs) +
-    ggtitle(paste(site_name, modis_type)) +
-    theme(axis.text = element_text(size=12),
-          axis.title = element_text(size=14),
-          title = element_text(size=16))
-  print(pl)
-  ggsave(Output_png_path, plot = pl,
-         width = 18, height = 10, units = "cm")
+  png_file = paste(site, "timeseries_plots.png", sep="_")
+  png_path = file.path(Figures_site, png_file)
   
-  # Column plot of Num_Pixels
-  png_file = paste(site_name, modis_type, "num_pixels.png", sep="_")
-  Output_png_path = file.path(Output_dir, site_name, png_file)
-  pl2 = ggplot(df, aes(x=Date, y=Num_Pixels)) +
-    geom_col(alpha=0.4, color = "orange", size = 0.2) +
-    ggtitle(paste(site_name, modis_type)) +
-    theme(axis.text = element_text(size=12),
-          axis.title = element_text(size=14),
-          title = element_text(size=16))
-  print(pl2)
-  ggsave(Output_png_path, plot = pl2,
-         width = 18, height = 10, units = "cm")
+  save_plot(png_path, pg, ncol=1, base_height = 9.0, base_asp = 1)
 }
 
 CropSaveCorine = function(clc, clc_path, site, site_name) {

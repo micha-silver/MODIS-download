@@ -98,5 +98,17 @@ lapply(spatial_files, FUN = function(site) {
    })
    t1 = Sys.time()
    elapsed = round(difftime(t1, t0, units = "mins"))
-   print(paste(t0, "-- Completed site:", site, "in", elasped, "mins"))
+   print(paste(t0, "-- Completed site:", site_name, "in", elapsed, "mins"))
  })
+
+## ----timeseries-averages--------------------------------------
+# Call TimeSeriesFromRaster() function for each site
+# Create graphs of each time series with PlotTimeSeries() function
+site_list = read.csv(site_list_file)
+sites = site_list$site_name
+for (site in sites){
+   t0 = Sys.time()
+   print(paste(t0, "-- Time series for site:", site))
+   timeseries_list = TimeSeriesFromRasters(site)
+   PlotTimeSeries(timeseries_list, site)
+}
