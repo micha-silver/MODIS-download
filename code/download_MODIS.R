@@ -65,7 +65,6 @@ source("functions.R")
 # The list of sites and download URL is in:
 # "site_shapefiles_url.txt"
 # Call ObtainSitePolygons function (in functions.R)
-site_list_file = "site_shapefiles_url.txt"
 ObtainSitePolygons(site_list_file)
 
 

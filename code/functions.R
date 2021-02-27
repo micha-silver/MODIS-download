@@ -81,6 +81,12 @@ TimeSeriesFromRasters = function(site) {
 
 
 PlotTimeSeries = function(timeseries_list, site) {
+  # Prepare directory to save time series graphs
+  Figures_site = file.path(Figures_dir, site)
+  if (!dir.exists(Figures_site)) {
+      dir.create(Figures_site, recursive = TRUE)}
+
+  # Loop over items in timeseries list, create plot for each product
   plt_list = lapply(1:length(timeseries_list),
                 FUN = function(t) {
     # Work on one product, and get rid of NAs
@@ -91,11 +97,8 @@ PlotTimeSeries = function(timeseries_list, site) {
                        names_to = "Statistic",
                        values_to = "Value")
     prod = names(timeseries_list)[t]
-    Figures_site = file.path(Figures_dir, site)
-    if (!dir.exists(Figures_site)) {
-      dir.create(Figures_site, recursive = TRUE)}
     
-    # Save timeseries to CSV
+    # Save each timeseries to CSV
     csv_file = paste(prod, "timeseries.csv", sep="_")
     csv_path = file.path(Figures_site, csv_file)
     write.csv(df, file = csv_path,row.names = FALSE)
@@ -113,24 +116,43 @@ PlotTimeSeries = function(timeseries_list, site) {
     #print(pl)
     return(pl)
   })
+
+  # Plot all MODIS products in one figure
   pg = cowplot::plot_grid(plotlist = plt_list,
                           align = "v", ncol=1)
-  # Prepare to save Plot
+  # save merged plot
   png_file = paste(site, "timeseries_plots.png", sep="_")
   png_path = file.path(Figures_site, png_file)
-  
   save_plot(png_path, pg, ncol=1, base_height = 9.0, base_asp = 1)
 }
 
-CropSaveCorine = function(clc, clc_path, site, site_name) {
-  clc_yr = unlist(strsplit(
-    basename(clc_path),split = "_", fixed = TRUE))[2]
-  clc_file = paste(site_name, clc_yr, sep="_")
-  clc_file = paste0(clc_file, ".tif")
-  Output_path = file.path(Output_dir, site_name, "Corine_Landcover")
-  if (!dir.exists(Output_path)) dir.create(Output_path)
-  Output_clc = file.path(Output_path, clc_file)
+CropSaveCorine = function(site) {
+  # Corine Landcover have been downloaded in advance from
+  # https://land.copernicus.eu/pan-european/corine-land-cover
+  # (Requires registration)
+  CLC_dir = file.path(GIS_dir, "CLC")
+  site_gpkg = file.path(GIS_dir, paste0(site, ".gpkg"))
+  site_sf = sf::read_sf(site_gpkg)
+  site_dir = file.path(Output_dir, site)
+  clc_list = list.files(CLC_dir, pattern = ".tif$",
+                        full.names = TRUE)
   
-  clc_crop = clc[site,]
-  write_stars(obj = clc_crop, dsn = Output_clc)
+  # Prepare directory to save cropped CLC rasters
+  Output_clc = file.path(Output_dir, site, "CLC")
+  if (!dir.exists(Output_clc)) {dir.create(Output_clc,
+                                           recursive = TRUE)}
+  for (clc_tif in clc_list) {
+    # Get Year for this CLC file
+    clc_name = tools::file_path_sans_ext(basename(clc_tif))
+    clc_yr = unlist(strsplit(clc_name, split = "_",
+                             fixed = TRUE))[2]
+    
+    clc = read_stars(clc_tif)
+    # Crop to site bounding box (after transform to CLC coord system)
+    site_sf = st_transform(site_sf, st_crs(clc))
+    clc_crop = clc[site_sf,]
+ 
+    Output_path = file.path(Output_clc, paste0(site, clc_yr, ".tif"))
+    write_stars(obj = clc_crop, dsn = Output_path)
+  }
 }
