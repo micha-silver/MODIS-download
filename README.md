@@ -266,7 +266,7 @@ tm_shape(NDVI_1) +
   tm_borders("black", lwd = 1.0)
 ```
 
-<img src="download_MODIS_files/figure-gfm/visualization-1.png" width="80%" />
+<img src="images/visualization-1.png" width="80%" />
 
 ``` r
 tm_shape(NDVI_2) +
@@ -276,7 +276,7 @@ tm_shape(NDVI_2) +
   tm_borders("black", lwd = 1.0)
 ```
 
-<img src="download_MODIS_files/figure-gfm/visualization-2.png" width="80%" />
+<img src="images/visualization-2.png" width="80%" />
 
 ``` r
 site_timeseries = list.files(file.path(Figures_dir, site), 
@@ -285,7 +285,7 @@ site_timeseries = list.files(file.path(Figures_dir, site),
 knitr::include_graphics(site_timeseries)
 ```
 
-<img src="../Figures/Cairngorms/Cairngorms_timeseries_plots.png" width="80%" />
+<img src="images/Cairngorms_timeseries_plots.png" width="80%" />
 
 <div id="refs" class="references hanging-indent">
 

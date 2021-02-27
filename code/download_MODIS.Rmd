@@ -8,9 +8,13 @@ output:
   github_document:
     toc: true
     toc_depth: 2
+  html_document:
+    toc: TRUE
+    toc_depth: 2
   pdf_document:
     toc: TRUE
     toc_depth: 2
+always_allow_html: true
 bibliography: bibliography.bib  
 ---
 
@@ -31,7 +35,7 @@ pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2",
              "mapedit", "magrittr")
 installed_packages <- pkg_list %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
-  install.packages(pkg_list[!installed_packages])
+  install.packages(pkg_list[!installed_packages], dependencies = TRUE)
 }
 # Packages loading
 pkgs = lapply(pkg_list, library, character.only = TRUE)
@@ -79,7 +83,7 @@ Download shapefiles from list of eLTER sites
 Save each as geopackage
 The list of sites and download URL is in: "site_shapefiles_url.txt"
 
-```{r site-polygons, results='hide', message=FALSE, include=FALSE}
+```{r site-polygons, results='hide', message=FALSE, eval=FALSE}
 # Call ObtainSitePolygons function (in functions.R)
 ObtainSitePolygons(site_list_file)
 ```
@@ -87,8 +91,7 @@ ObtainSitePolygons(site_list_file)
 \newpage
 
 ## MODIS products, layers
-Use the MODIStsp package to filter and download layers
-@busetto_modistsp
+Use the MODIStsp package (@busetto_modistsp) to filter and download layers.
 
 Display lists of all available products and layers in each product category.
 
@@ -119,33 +122,37 @@ https://urs.earthdata.nasa.gov/home
  
 Example:
 In **"Products and Layers"** panel
-  * from Product Category dropdown
-    - choose Ecosystem variables Vegetation Indices
-  * from Product Name dropdown
-    - choose Vegetation_Indices_16days_250m
-  * from layers to be processed dropdown
-    - choose 16 day NDVI average
-  * from Platform
-    - choose Both
+
+  - from Product Category dropdown
+    * choose Ecosystem variables Vegetation Indices
+  - from Product Name dropdown
+    * choose Vegetation_Indices_16days_250m
+  - from layers to be processed dropdown
+    * choose 16 day NDVI average
+  - from Platform
+    * choose Both
  
 In **"Spatial Temporal"** panel
-  * in Temporal Range, select date range
-  * in Output Projection
-    - select User defined
-    - click "Change" and enter EPSG for desired projection
-    - i.e. 3035 for ETRS89 based European LAEA (conformal) projection
-  * in Spatial Extent choose "Load from Spatial file" and click browse to choose gpkg for site 
+
+  - in Temporal Range, select date range
+  - in Output Projection
+    * select User defined
+    * click "Change" and enter EPSG for desired projection
+    * i.e. 3035 for ETRS89 based European LAEA (conformal) projection
+  - in Spatial Extent choose "Load from Spatial file" and click browse to choose gpkg for site 
   
 In **Output Format**
-  * Under Download Method, enter username and password
-  * Under Output Options, choose R rasterStack
-  * Under Output Folders, click browse to select output location
+
+  - Under Download Method, enter username and password
+  - Under Output Options, choose R rasterStack
+  - Under Output Folders, click browse to select output location
  
-Click **Save Options** 
-  * Save as json file
-  * Browse to save under R code directory
+Click **Save Options**
+
+  - Save as json file
+  - Browse to save under R code directory
   
-```{r GUI}
+```{r GUI, eval=FALSE}
 MODIStsp()
 ```
 
@@ -204,7 +211,7 @@ Loop over all sites and summarize pixels by date for each site.
 The functions used here are stored in `functions.R`
 
 ### Site timeseries data
-```{r timeseries-averages, warning=FALSE}
+```{r timeseries-averages, warning=FALSE, eval=FALSE}
 # Call TimeSeriesFromRaster() function for each site
 # Create graphs of each time series with PlotTimeSeries() function
 for (site in sites){
@@ -222,12 +229,50 @@ Have been downloaded in advance from:
 https://land.copernicus.eu/pan-european/corine-land-cover
 Crop each raster to extent of the site bounding box
 
-```{r CLC-landcover}
+```{r CLC-landcover, eval=FALSE}
 # Crop Corine Landcover from four years for each site
 # Call CropSaveCorine() function for each site
 
 for (site in sites) {
    CropSaveCorine(site)
 }
-````
+```
 
+## Visualization
+Show two NDVI maps and an example time series plot from Cairngorms
+
+```{r visualization, out.width = "80%"}
+library("tmap")
+library("tmaptools")  # For static maps
+site = "Cairngorms"
+site_gpkg = file.path(GIS_dir, paste0(site, ".gpkg"))
+site_sf = sf::read_sf(site_gpkg)
+site_sf = st_transform(site_sf, 4326)
+NDVI_file_list = list.files(file.path(Output_dir,
+                                      site,
+                                      "VI_16Days_250m_v6/NDVI"),
+                             pattern = ".tif$",
+                             full.names = TRUE)
+NDVI_1 = projectRaster(raster(NDVI_file_list[[1]]), crs = 4326)
+NDVI_1 =NDVI_1 * 0.0001
+NDVI_2 = projectRaster(raster(NDVI_file_list[[200]]), crs = 4326)
+NDVI_2 = NDVI_2 * 0.0001
+tmap_mode("plot")
+
+tm_shape(NDVI_1) +
+  tm_raster(palette = "RdYlGn",
+            title = "NDVI Winter", midpoint = NA) +
+  tm_shape(site_sf) + 
+  tm_borders("black", lwd = 1.0)
+
+tm_shape(NDVI_2) +
+  tm_raster(palette = "RdYlGn",
+            title = "NDVI Summer", midpoint = NA) +
+  tm_shape(site_sf) + 
+  tm_borders("black", lwd = 1.0)
+
+site_timeseries = list.files(file.path(Figures_dir, site), 
+                          pattern = ".png$",
+                          full.names = TRUE)
+knitr::include_graphics(site_timeseries)
+```
