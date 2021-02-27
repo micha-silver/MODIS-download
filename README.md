@@ -34,9 +34,9 @@ The data outputs are stored in the following directory structure:
   - *Documents*: contains relevant documentation (as well as this file)
   - *Figures*: contains the time series plots, and data files (csv) for
     each site.
-  - *code*: contains the R code and functions to run this demo.
-    Available on github at:
-    <https://github.com/micha-silver/MODIS-download>
+
+The `R` code and functions to run this demo are available on github at:
+<https://github.com/micha-silver/MODIS-download>
 
 ## Setup
 
@@ -97,8 +97,28 @@ source("functions.R")
 
 ### Load polygons from DEIMS site
 
-Download shapefiles from list of eLTER sites Save each as geopackage The
-list of sites and download URL is in: “site\_shapefiles\_url.txt”
+List of the sites used in this demo:
+
+``` r
+knitr::kable(site_list[,1:2],
+             caption = "List of eLTER+ sites")
+```
+
+| site\_name   | full\_name                                          |
+| :----------- | :-------------------------------------------------- |
+| Cairngorms   | Cairngorms National Park LTSER                      |
+| GranParadiso | Gran Paradiso National Park                         |
+| Tereno       | Tereno - Harlsben                                   |
+| Donana       | Doñana Long-Term Socio-ecological Research Platform |
+| ZAA          | LTSER Zone Atelier Alpes                            |
+
+List of eLTER+ sites
+
+  - Download shapefiles for each of of eLTER sites
+  - Save each as geopackage
+  - The download URL’s are is in: “site\_shapefiles\_url.txt”
+
+<!-- end list -->
 
 ``` r
 # Call ObtainSitePolygons function (in functions.R)
@@ -175,15 +195,16 @@ Click **Save Options**
 <!-- end list -->
 
 ``` r
+# Interactive configuration for MODIS download
 MODIStsp()
 ```
 
 ### Loop over all sites
 
-Call the MODIStsp() function with `gui = FALSE` and point to each json
-formatted options file to run the download. The options file was saved
-from the GUI step above. This loop downloads all available MODIS tiles
-for each AOI.
+Now call the MODIStsp() function with `gui = FALSE` and point to each
+json formatted options file to run the download. The options file was
+saved from the GUI step above. This loop downloads all available MODIS
+tiles for each AOI.
 
 The download utility used here is “aria2”. It can be obtained from:
 <https://github.com/aria2/aria2/releases/tag/release-1.35.0>
