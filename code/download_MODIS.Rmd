@@ -61,7 +61,11 @@ Figures_dir = "../Figures"
 if (!dir.exists(Figures_dir)) {dir.create(Figures_dir,
                                          recursive = TRUE)}
 
+# List of eLTER+ sites and DEIMS URL's for download
 site_list_file = "site_shapefiles_url.txt"
+site_list = read.csv(site_list_file)
+sites = site_list$site_name
+
 # (Add option to ignore Datum unknown warnings)
 options("rgdal_show_exportToProj4_warnings"="none")
 
@@ -203,8 +207,6 @@ The functions used here are stored in `functions.R`
 ```{r timeseries-averages, warning=FALSE}
 # Call TimeSeriesFromRaster() function for each site
 # Create graphs of each time series with PlotTimeSeries() function
-site_list = read.csv(site_list_file)
-sites = site_list$site_name
 for (site in sites){
   t0 = Sys.time()
   print(paste(t0, "-- Time series for site:", site))
@@ -215,29 +217,17 @@ for (site in sites){
 
 
 ### Corine Landcover for four years of CLC rasters
-```{r landcover}
-# ## Crop Corine Landcover from four years for each site
-# ```{r corine_landcover}
-# corine_basedir = "/home/micha/GIS/Corine_CLC"
-# corine_datadirs = list.dirs(path = corine_basedir)
-# corine_datadirs = corine_datadirs[grepl(pattern = "DATA$", x = corine_datadirs)]
-# corine_list = sapply(corine_datadirs, 
-#                      FUN = function(d) {list.files(d,
-#                                                    pattern = ".*tif$",
-#                                                    full.names = TRUE)},
-#                      USE.NAMES = FALSE)
-# site_names = lapply(site_files, FUN = function(f) {
-#                       tools::file_path_sans_ext(basename(f))})
-# 
-# for (s in 1:length(site_names)) {
-#   site_name = site_names[[s]]
-#   site = read_sf(site_files[s])
-#   # Transform site boundary to LAEA ETRS89 to match Corine data
-#   site = st_transform(site, crs=3035)
-#   for (clc_path in corine_list) {
-#       clc = read_stars(clc_path)
-#       CropSaveCorine(clc, clc_path, site, site_name)
-#   }
-# }
+Corine Landcover rasters at 100 m resolution, for four years.
+Have been downloaded in advance from:
+https://land.copernicus.eu/pan-european/corine-land-cover
+Crop each raster to extent of the site bounding box
+
+```{r CLC-landcover}
+# Crop Corine Landcover from four years for each site
+# Call CropSaveCorine() function for each site
+
+for (site in sites) {
+   CropSaveCorine(site)
+}
 ````
 
