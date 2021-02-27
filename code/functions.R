@@ -152,7 +152,8 @@ CropSaveCorine = function(site) {
     site_sf = st_transform(site_sf, st_crs(clc))
     clc_crop = clc[site_sf,]
  
-    Output_path = file.path(Output_clc, paste0(site, clc_yr, ".tif"))
+    Output_tif = paste(site, paste0(clc_yr, ".tif"), sep="_") 
+    Output_path = file.path(Output_clc, Output_tif)
     write_stars(obj = clc_crop, dsn = Output_path)
   }
 }
