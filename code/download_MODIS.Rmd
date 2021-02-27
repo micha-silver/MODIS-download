@@ -1,17 +1,15 @@
 ---
 title: "Acquiring EO datasets for eLTER+ sites"
-author:
-  - name: Micha Silver
-  - name: Arnon Karnieli
-date: "20/02/2021"
+author: "Micha Silver, Arnon Karnieli"
+date: "28/02/2021"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-  html_document:
+  pdf_document:
     toc: TRUE
     toc_depth: 2
-  pdf_document:
+  github_document:
+    toc: TRUE
+    toc_depth: 2
+  html_document:
     toc: TRUE
     toc_depth: 2
 always_allow_html: true
@@ -21,8 +19,24 @@ bibliography: bibliography.bib
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Introduction
 
+This `R` script demonstrates acquiring a time series of MODIS datasets covering five eLTER sites. The demo consists of three parts:
+
+  1. Setup of the environment, including loading `R` libraries, defining directories, and reading in shapefiles of the eLTER sites.
+  2. Choosing and downloading of the desired MODIS datasets, then cropping to the bounding box of each site.
+  3. Calculating averages of each MODIS product over the area of the sites, and preparing a time series these averages covering 10 years of  MODIS products for each site.
+
+The data outputs are stored in the following directory structure:
+
+  * _GIS_: contains polygon layers for each site, and the Corine rasters covering Europe for four years.
+  * _Output_: contains a directory for each site, with all NDVI, and LST rasters (GeoTiff format) covering 10 years. Within each site directory there is also a subdirectory Time_Series which contains the time series averages as a raster stack (in RData format).
+  * _Documents_: contains relevant documentation (as well as this file)
+  * _Figures_: contains the time series plots, and data files (csv) for each site.
+  * _code_: contains the R code and functions to run this demo. Available on github at:  https://github.com/micha-silver/MODIS-download
+  
 ## Setup
+
 Load necessary R libraries, user configurable directories, then read in the `functions.R` script with contains helper functions for summarizing layers by date and site, and plotting graphs.
 
 ### Libraries
@@ -121,7 +135,8 @@ Requires registration on EarthData website:
 https://urs.earthdata.nasa.gov/home
  
 Example:
-In **"Products and Layers"** panel
+
+In **Products and Layers** panel
 
   - from Product Category dropdown
     * choose Ecosystem variables Vegetation Indices
@@ -132,7 +147,7 @@ In **"Products and Layers"** panel
   - from Platform
     * choose Both
  
-In **"Spatial Temporal"** panel
+In **Spatial Temporal** panel
 
   - in Temporal Range, select date range
   - in Output Projection

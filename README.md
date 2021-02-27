@@ -1,13 +1,42 @@
 Acquiring EO datasets for eLTER+ sites
 ================
-truetrue
-20/02/2021
+Micha Silver, Arnon Karnieli
+28/02/2021
 
+  - [Introduction](#introduction)
   - [Setup](#setup)
   - [MODIS products, layers](#modis-products-layers)
   - [Time series EO products averaged for each
     site](#time-series-eo-products-averaged-for-each-site)
   - [Visualization](#visualization)
+
+## Introduction
+
+This `R` script demonstrates acquiring a time series of MODIS datasets
+covering five eLTER sites. The demo consists of three parts:
+
+1.  Setup of the environment, including loading `R` libraries, defining
+    directories, and reading in shapefiles of the eLTER sites.
+2.  Choosing and downloading of the desired MODIS datasets, then
+    cropping to the bounding box of each site.
+3.  Calculating averages of each MODIS product over the area of the
+    sites, and preparing a time series these averages covering 10 years
+    of MODIS products for each site.
+
+The data outputs are stored in the following directory structure:
+
+  - *GIS*: contains polygon layers for each site, and the Corine rasters
+    covering Europe for four years.
+  - *Output*: contains a directory for each site, with all NDVI, and LST
+    rasters (GeoTiff format) covering 10 years. Within each site
+    directory there is also a subdirectory Time\_Series which contains
+    the time series averages as a raster stack (in RData format).
+  - *Documents*: contains relevant documentation (as well as this file)
+  - *Figures*: contains the time series plots, and data files (csv) for
+    each site.
+  - *code*: contains the R code and functions to run this demo.
+    Available on github at:
+    <https://github.com/micha-silver/MODIS-download>
 
 ## Setup
 
@@ -109,7 +138,9 @@ Here the user can choose:
 Requires registration on EarthData website:
 <https://urs.earthdata.nasa.gov/home>
 
-Example: In **“Products and Layers”** panel
+Example:
+
+In **Products and Layers** panel
 
   - from Product Category dropdown
       - choose Ecosystem variables Vegetation Indices
@@ -120,7 +151,7 @@ Example: In **“Products and Layers”** panel
   - from Platform
       - choose Both
 
-In **“Spatial Temporal”** panel
+In **Spatial Temporal** panel
 
   - in Temporal Range, select date range
   - in Output Projection
@@ -266,7 +297,7 @@ tm_shape(NDVI_1) +
   tm_borders("black", lwd = 1.0)
 ```
 
-<img src="images/visualization-1.png" width="80%" />
+<img src="download_MODIS_files/figure-gfm/visualization-1.png" width="80%" />
 
 ``` r
 tm_shape(NDVI_2) +
@@ -276,7 +307,7 @@ tm_shape(NDVI_2) +
   tm_borders("black", lwd = 1.0)
 ```
 
-<img src="images/visualization-2.png" width="80%" />
+<img src="download_MODIS_files/figure-gfm/visualization-2.png" width="80%" />
 
 ``` r
 site_timeseries = list.files(file.path(Figures_dir, site), 
@@ -285,7 +316,7 @@ site_timeseries = list.files(file.path(Figures_dir, site),
 knitr::include_graphics(site_timeseries)
 ```
 
-<img src="images/Cairngorms_timeseries_plots.png" width="80%" />
+<img src="../Figures/Cairngorms/Cairngorms_timeseries_plots.png" width="80%" />
 
 <div id="refs" class="references hanging-indent">
 
