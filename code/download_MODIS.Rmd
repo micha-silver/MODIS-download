@@ -1,12 +1,15 @@
 ---
 title: "Acquiring EO datasets for eLTER+ sites"
+
 author: "Micha Silver, Arnon Karnieli"
+
 date: "28/02/2021"
+
 output:
-  pdf_document:
+  github_document:
     toc: TRUE
     toc_depth: 2
-  github_document:
+  pdf_document:
     toc: TRUE
     toc_depth: 2
   html_document:
@@ -117,13 +120,19 @@ Use the MODIStsp package (@busetto_modistsp) to filter and download layers.
 
 Display lists of all available products and layers in each product category.
 
-```{r MODIS-products, eval=FALSE}
-MODIStsp_get_prodnames()
-# [105] "Vegetation Indexes_16Days_250m (M*D13Q1)"
-# [23] "LST_3band_emissivity_8day_1km (M*D21A2)"
+```{r MODIS-products}
+MODIS_products = MODIStsp_get_prodnames()
+# Vegetation products:
+print("Vegetation Index products:")
+MODIS_products[grepl("Vegetation", MODIS_products)]
+cat('\n')
+# Land surface temperature products:
+print("Land Surface Temperature products")
+MODIS_products[grepl("LST", MODIS_products)]
 # ... many more
 ```
 
+These commands will show all details for specific products:
 
 ```{r MODIS-layers, eval=FALSE}
 MODIStsp_get_prodlayers("Vegetation Indexes_16Days_250m (M*D13Q1)")
