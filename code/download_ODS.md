@@ -141,17 +141,20 @@ Show two sample NDVI maps
 tif_list = list.files(Highres_dir, pattern = ".tif$",
                       full.names = TRUE)
 site_NDVI_stk = rast(tif_list)
+# Find only 2018 layers
+names_2018 = names(site_NDVI_stk)[grepl("2018", names(site_NDVI_stk))]
+site_NDVI_2018 = subset(site_NDVI_stk, names_2018)
 
 tmap_mode("plot")
 # read OSM raster data
 osm_GER <- read_osm(st_bbox(site_sf),
                     type = "esri-topo", ext=1.2)
 
-# Plot two sample seasons:
-for (s in c(13, 15)) {
-  site_NDVI = site_NDVI_stk[[s]]
+# Plot two sample seasons, Jun and Dec, 2018:
+for (s in c(2, 4)) {
+  site_NDVI = site_NDVI_2018[[s]]
   yrmo = unlist(strsplit(names(site_NDVI), split = "_", fixed = TRUE))[7]
-  yrmo = paste(substr(yrmo, 1, 4), substr(yrmo, 5, 6), sep="-")
+  yrmo = paste(substr(yrmo, 5, 6), substr(yrmo, 1, 4), sep="-")
   ttl = paste(site, "NDVI", yrmo)
   
   m = tm_shape(osm_GER) +
