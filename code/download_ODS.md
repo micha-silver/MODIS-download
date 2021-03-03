@@ -21,7 +21,7 @@ See:
 
 for details of how the datasets were prepared. This archive contains (as
 of 2021) NDVI as quarterly averages covering 20 years, and landcover
-(based on both Corine and Landsat) as monthly imagess, also covering 20
+(based on both Corine and Landsat) as monthly images, also covering 20
 years.
 
 The Tereno site is chosen as a small eLTER area to showcase this data.
@@ -80,10 +80,16 @@ options("rgdal_show_exportToProj4_warnings"="none")
 Load only the Tereno polygon, and transform to the European CRS: ETRS89
 
 ``` r
-tereno_gpkg = "Tereno.gpkg"
-tereno_sf = read_sf(file.path(GIS_dir, tereno_gpkg))
+site = "Tereno"
+site_gpkg = paste0(site, ".gpkg")
+site_sf = read_sf(file.path(GIS_dir, site_gpkg))
 # Transform to ETRS89 CRS to match OpenDataScience layers
-tereno_sf_ETRS = st_transform(tereno_sf, 3035)
+site_sf_ETRS = st_transform(site_sf, 3035)
+
+# Where to save High resolution outputs
+Highres_dir = file.path(Output_dir, site, "NDVI_Highres")
+if (!dir.exists(Highres_dir)) {dir.create(Highres_dir,
+                                          recursive = TRUE)}
 ```
 
 ## Read all NDVI rasters
@@ -92,60 +98,75 @@ tereno_sf_ETRS = st_transform(tereno_sf, 3035)
     allows reading only the metadata, thus avoiding download of full
     (very large) datasets.
   - Thus the URL for download is constructed by concatenating:
-      - “/vsicurl”
+      - “/vsicurl/”
       - “<https://s3.eu-central-1.wasabisys.com/>” (the base URL)
-      - “eumap/lcv/” (dataset group)
+      - “eumap/lcv/” (dataset group/subdirectory)
       - “lcv\_ndvi\_landsat.glad.ard\_p50\_30m\_0..0cm\_200003\_eumap\_epsg3035\_v1.0.tif”
-        (the actual tif filename)
+        (each actual **tif** filename)
   - Crop to Tereno bounding box
-  - Return a list of 3-month average NDVI for 20 years covering the
+  - Save as Geotiff each 3-month average NDVI for 20 years covering the
     eLTER site
 
-<!-- end list -->
+This code runs for a few minutes
 
 ``` r
-ODS_URL = "https://s3.eu-central-1.wasabisys.com/"
+ODS_wasabi = "https://s3.eu-central-1.wasabisys.com/"
 
-tereno_list = lapply(1:4, FUN = function(x){
-#tereno_list = lapply(1:length(ODS_NDVI_list), FUN = function(x){
-  folder = ODS_NDVI_list$folder[x]
-  name = ODS_NDVI_list$name[x]
-  url = paste0("/vsicurl/", ODS_URL, folder, "/", name)
-  rast_ndvi = terra::rast(url)
-  tereno_ndvi = crop(rast_ndvi, vect(tereno_sf_ETRS))
-  #terena_ndvi = mask(tereno_ndvi, tereno_sf)
-  return(tereno_ndvi)
+# Loop thru list of NDVI rasters from OpenDataScience site
+lapply(1:length(ODS_NDVI_list$name), FUN = function(x){
+  ods_folder = ODS_NDVI_list$folder[x]
+  ods_name = ODS_NDVI_list$name[x]
+  
+  # Extract the year-month from tif name.
+  # Use this string to save new Geotiff
+  yrmo = unlist(strsplit(ods_name, split = "_", fixed = TRUE))[7]
+  yrmo = paste(substr(yrmo, 5, 6), substr(yrmo, 1, 4), sep="-")
+  site_tif = paste(site, "NDVI", "Hires", yrmo, sep="_")
+  site_path = file.path(Highres_dir, paste0(site_tif, ".tif"))
+  
+  ods_url = paste0("/vsicurl/",
+                   ODS_wasabi, ods_folder, "/", ods_name)
+  rast_ndvi = terra::rast(ods_url)
+  site_ndvi = crop(rast_ndvi, vect(site_sf_ETRS))
+  terra::writeRaster(site_ndvi, site_path, overwrite = TRUE)
 })
 ```
 
 ## Visualize
 
-Show two sample maps for 2020
+Show two sample NDVI maps
 
 ``` r
+# Get all NDVI rasters into terra SpatRaster structure
+tif_list = list.files(Highres_dir, pattern = ".tif$",
+                      full.names = TRUE)
+site_NDVI_stk = rast(tif_list)
+
 tmap_mode("plot")
 # read OSM raster data
-osm_GER <- read_osm(st_bbox(tereno_sf),
+osm_GER <- read_osm(st_bbox(site_sf),
                     type = "esri-topo", ext=1.2)
-tm_shape(osm_GER) +
-  tm_rgb() +
-  tm_shape(tereno_list[[2]]) +
-    tm_raster(palette = "RdYlGn", alpha = 0.6) +
-  tm_shape(tereno_sf) +
-    tm_borders(col="darkgrey", lwd = 1.5) +
-  tm_layout(main.title = "Tereno NDVI - June 2020")
+
+# Plot two sample seasons:
+for (s in c(13, 15)) {
+  site_NDVI = site_NDVI_stk[[s]]
+  yrmo = unlist(strsplit(names(site_NDVI), split = "_", fixed = TRUE))[7]
+  yrmo = paste(substr(yrmo, 1, 4), substr(yrmo, 5, 6), sep="-")
+  ttl = paste(site, "NDVI", yrmo)
+  
+  m = tm_shape(osm_GER) +
+    tm_rgb() +
+    tm_shape(site_NDVI) +
+      tm_raster(palette = "RdYlGn", alpha = 0.6) +
+    tm_shape(site_sf) +
+      tm_borders(col="darkgrey", lwd = 1.5) +
+    tm_layout(main.title = ttl) +
+      tm_scale_bar(position = c("right", "bottom"))
+  
+  print(m)
+  cat("\n")
+}
 ```
 
-![](download_ODS_files/figure-gfm/visualization-1.png)<!-- -->
-
-``` r
-tm_shape(osm_GER) +
-  tm_rgb() +
-  tm_shape(tereno_list[[4]]) +
-    tm_raster(palette = "RdYlGn", alpha = 0.6) +
-  tm_shape(tereno_sf) +
-    tm_borders(col="darkgrey", lwd = 1.5) +
-  tm_layout(main.title = "Tereno NDVI - Dec 2020")
-```
-
-![](download_ODS_files/figure-gfm/visualization-2.png)<!-- -->
+<img src="download_ODS_files/figure-gfm/visualization-1.png" style="display: block; margin: auto;" />
+<img src="download_ODS_files/figure-gfm/visualization-2.png" style="display: block; margin: auto;" />

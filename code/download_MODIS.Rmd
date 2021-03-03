@@ -3,10 +3,10 @@ title: "Acquiring EO datasets for eLTER+ sites"
 author: "Micha Silver, Arnon Karnieli"
 date: "28/02/2021"
 output:
-  pdf_document:
+  github_document:
     toc: TRUE
     toc_depth: 2
-  github_document:
+  pdf_document:
     toc: TRUE
     toc_depth: 2
   html_document:
@@ -52,7 +52,7 @@ pkgs = lapply(pkg_list, library, character.only = TRUE)
 
 ### Define directories
 
-This code chunk includes reading a text file "site_shapefiles_url.txt"
+This code chunk includes reading a text file "site_shapefiles_url.csv"
 that includes a list of sites, with three columns:
 name, full_name, url
 The URL is a link to the boundary shapefile from DEIMS for each site.
@@ -75,7 +75,7 @@ if (!dir.exists(Figures_dir)) {dir.create(Figures_dir,
                                          recursive = TRUE)}
 
 # List of eLTER+ sites and DEIMS URL's for download
-site_list_file = "site_shapefiles_url.txt"
+site_list_file = "site_shapefiles_url.csv"
 site_list = read.csv(site_list_file)
 sites = site_list$site_name
 
@@ -97,7 +97,7 @@ knitr::kable(site_list[,1:2],
   
   - Download shapefiles for each of of eLTER sites
   - Save each as geopackage
-  - The download URL's are is in: "site_shapefiles_url.txt"
+  - The download URL's are is in: "site_shapefiles_url.csv"
   
 ```{r site-polygons, results='hide', message=FALSE, eval=FALSE}
 # Call ObtainSitePolygons function (in functions.R)
@@ -290,7 +290,8 @@ tm_shape(NDVI_1) +
   tm_raster(palette = "RdYlGn",
             title = "NDVI Winter", midpoint = NA, alpha = 0.7) +
   tm_shape(site_sf) + 
-  tm_borders("black", lwd = 1.5)
+  tm_borders("black", lwd = 1.5)+
+    tm_scale_bar(position = c("right", "bottom"))
 
 tm_shape(osm_Cairngorm) +
   tm_rgb() +
@@ -298,7 +299,8 @@ tm_shape(NDVI_2) +
   tm_raster(palette = "RdYlGn",
             title = "NDVI Summer", midpoint = NA, alpha = 0.7) +
   tm_shape(site_sf) + 
-  tm_borders("black", lwd = 1.5)
+  tm_borders("black", lwd = 1.5) +
+    tm_scale_bar(position = c("right", "bottom"))
 
 site_timeseries = list.files(file.path(Figures_dir, site), 
                           pattern = ".png$",

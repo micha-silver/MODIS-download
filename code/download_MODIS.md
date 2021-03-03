@@ -51,7 +51,7 @@ pkgs = lapply(pkg_list, library, character.only = TRUE)
 
 ### Define directories
 
-This code chunk includes reading a text file “site\_shapefiles\_url.txt”
+This code chunk includes reading a text file “site\_shapefiles\_url.csv”
 that includes a list of sites, with three columns: name, full\_name, url
 The URL is a link to the boundary shapefile from DEIMS for each site.
 
@@ -73,7 +73,7 @@ if (!dir.exists(Figures_dir)) {dir.create(Figures_dir,
                                          recursive = TRUE)}
 
 # List of eLTER+ sites and DEIMS URL's for download
-site_list_file = "site_shapefiles_url.txt"
+site_list_file = "site_shapefiles_url.csv"
 site_list = read.csv(site_list_file)
 sites = site_list$site_name
 
@@ -105,7 +105,7 @@ List of eLTER+ sites
 
   - Download shapefiles for each of of eLTER sites
   - Save each as geopackage
-  - The download URL’s are is in: “site\_shapefiles\_url.txt”
+  - The download URL’s are is in: “site\_shapefiles\_url.csv”
 
 <!-- end list -->
 
@@ -356,7 +356,8 @@ tm_shape(NDVI_1) +
   tm_raster(palette = "RdYlGn",
             title = "NDVI Winter", midpoint = NA, alpha = 0.7) +
   tm_shape(site_sf) + 
-  tm_borders("black", lwd = 1.5)
+  tm_borders("black", lwd = 1.5)+
+    tm_scale_bar(position = c("right", "bottom"))
 ```
 
 <img src="download_MODIS_files/figure-gfm/visualization-1.png" width="80%" />
@@ -368,7 +369,8 @@ tm_shape(NDVI_2) +
   tm_raster(palette = "RdYlGn",
             title = "NDVI Summer", midpoint = NA, alpha = 0.7) +
   tm_shape(site_sf) + 
-  tm_borders("black", lwd = 1.5)
+  tm_borders("black", lwd = 1.5) +
+    tm_scale_bar(position = c("right", "bottom"))
 ```
 
 <img src="download_MODIS_files/figure-gfm/visualization-2.png" width="80%" />
