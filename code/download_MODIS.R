@@ -19,7 +19,7 @@ pkg_list = c("MODIStsp", "lubridate", "raster", "ggplot2",
              "cowplot", "tidyr", "sf", "stars", "leaflet",
              "shiny","shinydashboard","shinyFiles",
              "shinyalert",  "rappdirs","shinyjs", "leafem",
-             "mapedit", "magrittr")
+             "mapedit", "magrittr", "tmap", "tmaptools", "OpenStreetMap")
 installed_packages <- pkg_list %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
   install.packages(pkg_list[!installed_packages])
