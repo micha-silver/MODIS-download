@@ -1,16 +1,14 @@
 Acquiring EO datasets for eLTER+ sites
 ================
+
 Micha Silver, Arnon Karnieli
+
+Remote Sensing Lab, Sde Boker Campus, Ben Gurion University
+
 28/02/2021
 
-  - [Introduction](#introduction)
-  - [Setup](#setup)
-  - [MODIS products, layers](#modis-products-layers)
-  - [Time series EO products averaged for each
-    site](#time-series-eo-products-averaged-for-each-site)
-  - [Visualization](#visualization)
 
-## Introduction
+## Data
 
 These `R` scripts demonstrate acquiring a time series of EO datasets
 covering five eLTER sites. Each demo consists of four parts:
@@ -24,7 +22,11 @@ covering five eLTER sites. Each demo consists of four parts:
     of MODIS products for each site.
 4.  Visualizing a sample of the results
 
-The data outputs are stored in the following directory structure:
+The data outputs from these scripts are available from the UK Centre for Ecology and Hydrology (UKCEH) Datalabs environment at:
+
+https://datalab.datalabs.ceh.ac.uk/projects/elterfr/storage
+
+Output data are stored in the following directory structure:
 
   - *GIS*: contains polygon layers for each site, and the Corine rasters
     covering Europe for four years.
@@ -36,9 +38,12 @@ The data outputs are stored in the following directory structure:
   - *Figures*: contains the time series plots, and data files (csv) for
     each site.
 
-Further details and documentation are in the `code` subdirectory.
-See [download_MODIS](code/download_MODIS.md) for explanations and examples of how to obtain MODIS (low resolution) NDVI and LST data.
-See [download_ODS](code/download_ODS.md) for an example of obtaining high resolution NDVI from OpenDataScience
+
+## Code
+
+  * See [download_MODIS](code/download_MODIS.md) for explanations and examples of how to obtain MODIS (low resolution) NDVI and LST data.
+
+  * See [download_ODS](code/download_ODS.md) for an example of obtaining high resolution NDVI from OpenDataScience
 
 The `R` code and functions to run this demo are available on github at:
 <https://github.com/micha-silver/MODIS-download>
