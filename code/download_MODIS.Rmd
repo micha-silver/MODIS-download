@@ -302,8 +302,7 @@ tm_shape(NDVI_2) +
   tm_borders("black", lwd = 1.5) +
     tm_scale_bar(position = c("right", "bottom"))
 
-site_timeseries = list.files(file.path(Figures_dir, site), 
-                          pattern = ".png$",
-                          full.names = TRUE)
+site_timeseries = file.path('download_MODIS_files/figure-gfm/', 
+                          "Cairngorm_timeseries_plots.png")
 knitr::include_graphics(site_timeseries)
 ```

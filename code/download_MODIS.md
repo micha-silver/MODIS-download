@@ -376,13 +376,12 @@ tm_shape(NDVI_2) +
 <img src="download_MODIS_files/figure-gfm/visualization-2.png" width="80%" />
 
 ``` r
-site_timeseries = list.files(file.path(Figures_dir, site), 
-                          pattern = ".png$",
-                          full.names = TRUE)
+site_timeseries = file.path('download_MODIS_files/figure-gfm/', 
+                          "Cairngorm_timeseries_plots.png")
 knitr::include_graphics(site_timeseries)
 ```
 
-<img src="../Figures/Cairngorms/Cairngorms_timeseries_plots.png" width="80%" />
+<img src="download_MODIS_files/figure-gfm//Cairngorm_timeseries_plots.png" width="80%" />
 
 <div id="refs" class="references hanging-indent">
 

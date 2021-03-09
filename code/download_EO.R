@@ -167,5 +167,7 @@ lapply(1:length(ODS_NDVI_list$name), FUN = function(x){
                    ODS_wasabi, ods_folder, "/", ods_name)
   rast_ndvi = terra::rast(ods_url)
   site_ndvi = crop(rast_ndvi, vect(site_sf_ETRS))
+  #Revert to original NDVI, undo the COG value
+  site_ndvi = (site_ndvi - 100) / 100.0
   terra::writeRaster(site_ndvi, site_path, overwrite = TRUE)
 })
