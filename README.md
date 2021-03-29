@@ -45,6 +45,8 @@ Output data are stored in the following directory structure:
 
   * See [download_ODS](code/download_ODS.md) for an example of obtaining high resolution NDVI from OpenDataScience
 
+  * See [Corine_cookie_cutting](code/Corine_cookie_cutting.md) for an example of cropping Corine landcover to eLTER site boundaries
+
 The `R` code and functions to run this demo are available on github at:
 <https://github.com/micha-silver/MODIS-download>
 

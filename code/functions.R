@@ -157,3 +157,47 @@ CropSaveCorine = function(site) {
     write_stars(obj = clc_crop, dsn = Output_path)
   }
 }
+
+PrepareDeimsPolygons <- function() {
+  # Read original DEIMS polygons shapefile
+  # Split "title" column to three: site, location, country
+  GIS_dir = "../GIS"
+  CLC_dir = file.path(GIS_dir, "CLC")
+  deims_gpkg = file.path(GIS_dir, "DEIMS_sites.gpkg")
+  # Where to save outputs
+  Output_dir = "../Output"
+  if (!dir.exists(Output_dir)) {dir.create(Output_dir,
+                                           recursive = TRUE)}
+  
+  deims = read_sf(deims_gpkg, layer="site_boundaries_eu")
+  # First fix some titles
+  fixed_title <- lapply(deims$title, function(t) {gsub(x = t,
+                                        pattern = ':',
+                                        replacement = " -")})
+  deims$title = unlist(fixed_title)
+  # Now split out country names and locations
+  site_names = lapply(deims$title, function(t) {
+    s_list = unlist(strsplit(t, split = " - "))
+    site = s_list[[1]]
+  })
+  cntry_names = lapply(deims$title, function(t){
+    n_list = unlist(strsplit(t, split = " - "))
+    cntry = ifelse(length(n_list) == 2,
+                  n_list[[2]],
+                  n_list[[length(n_list)]])
+  })
+  location_names = lapply(deims$title, function(t) {
+    l_list = unlist(strsplit(t, split = "-"))
+    loc = ifelse(length(l_list) > 2,
+                  l_list[[length(l_list)-1]],
+                  NA)
+  })
+  # Add new columns and save
+
+  deims['Site'] = unlist(site_names)
+  deims["Location"] = unlist(location_names)
+  deims['Country'] = unlist(cntry_names)
+  # Write back to geopackage
+  st_write(deims, dsn = deims_gpkg,
+           layer = "sites_eu", delete_layer = TRUE)
+}
