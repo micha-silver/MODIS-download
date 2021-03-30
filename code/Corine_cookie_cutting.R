@@ -1,9 +1,5 @@
-## ----setup, include=FALSE----------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
-
-
 ## ----libraries, message=FALSE, results='hide', warning=FALSE-----------------
-pkg_list = c("terra", "sf", "tmap", "tmaptools", "OpenStreetMap", "dplyr")
+pkg_list = c("terra", "sf", "tmap", "tmaptools", "OpenStreetMap", "dplyr", "stringr")
 installed_packages <- pkg_list %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
   install.packages(pkg_list[!installed_packages], dependencies = TRUE)
@@ -18,7 +14,7 @@ GIS_dir = "../GIS"
 CLC_dir = file.path(GIS_dir, "CLC")
 
 # Where to save outputs
-Output_dir = "../Output/Corine_Landcover"
+Output_dir = "/media/micha/Storage_8TB/Data/EO/Corine_Landcover"
 if (!dir.exists(Output_dir)) {dir.create(Output_dir,
                                          recursive = TRUE)}
 
@@ -43,9 +39,10 @@ deims = st_transform(deims, st_crs(clc))
 ## ----select-site-------------------------------------------------------------
 country_list = unique(deims$Country)
 
-
 lapply(country_list, function(cntry) {
   deims_country = deims[deims$Country == cntry,]
+  # For directory name, make sure no wierd characters in country names
+  cntry = str_replace_all(cntry, "[^[:alnum:]]", "")
   Country_dir = file.path(Output_dir, cntry)
   if (!dir.exists(Country_dir)) {
     dir.create(Country_dir)
@@ -55,14 +52,12 @@ lapply(country_list, function(cntry) {
   clc_cookiecut = lapply(1:nrow(deims_country), function(s) {
     site = deims_country[s,]
     # Prepare file name to save Clipped CLC
-    tif_name = paste(site$Site, site$Location, site$Country, sep = "_")
-    tif_name = tolower(tif_name)
-    tif_name = gsub(pattern = " ", replacement = "_",
+    tif_name = paste(str_replace_all(site$Site, "[^[:alnum:]]", ""),
+                     str_replace_all(site$Location, "[^[:alnum:]]", ""), 
+                     str_replace_all(site$Country, "[^[:alnum:]]", ""),
+                     sep = "_")
+    tif_name = gsub(pattern = "_NA_", replacement = "_",
                     x = tif_name)
-    tif_name = gsub(pattern = "(", replacement = "",
-                    x = tif_name, fixed = TRUE)
-    tif_name = gsub(pattern = ")", replacement = "",
-                    x = tif_name, fixed = TRUE)
     
     tif_path = file.path(Country_dir, paste0(tif_name, ".tif"))
     
